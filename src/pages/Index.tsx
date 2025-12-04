@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,18 @@ interface Review {
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('authData');
+    if (savedAuth) {
+      const authData = JSON.parse(savedAuth);
+      setIsLoggedIn(true);
+      setUserName(authData.userName);
+      setCurrentScreen('dashboard');
+    }
+  }, []);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -53,14 +65,28 @@ const Index = () => {
 
   const availableTimes = ['10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
-  const handleLogin = () => {
+  const handleLogin = (firstName: string) => {
     setIsLoggedIn(true);
+    setUserName(firstName);
     setCurrentScreen('dashboard');
+    
+    if (rememberMe) {
+      localStorage.setItem('authData', JSON.stringify({
+        isLoggedIn: true,
+        userName: firstName
+      }));
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = (firstName: string) => {
     setIsLoggedIn(true);
+    setUserName(firstName);
     setCurrentScreen('dashboard');
+    
+    localStorage.setItem('authData', JSON.stringify({
+      isLoggedIn: true,
+      userName: firstName
+    }));
   };
 
   const handleBooking = () => {
@@ -188,33 +214,52 @@ const Index = () => {
     </div>
   );
 
-  const LoginScreen = () => (
-    <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in">
-      <Card className="w-full max-w-md shadow-xl rounded-3xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">Вход в аккаунт</CardTitle>
-          <CardDescription>Войдите для записи на услуги</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">Имя</Label>
-            <Input id="firstName" placeholder="Введите имя" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Фамилия</Label>
-            <Input id="lastName" placeholder="Введите фамилию" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Номер телефона</Label>
-            <Input id="phone" type="tel" placeholder="+7 (999) 999-99-99" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
-            <Input id="password" type="password" placeholder="Введите пароль" className="rounded-xl" />
-          </div>
-          <Button onClick={handleLogin} className="w-full rounded-xl h-12" size="lg">
-            Войти
-          </Button>
+  const LoginScreen = () => {
+    const [firstName, setFirstName] = useState('');
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in">
+        <Card className="w-full max-w-md shadow-xl rounded-3xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl">Вход в аккаунт</CardTitle>
+            <CardDescription>Войдите для записи на услуги</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Имя</Label>
+              <Input 
+                id="firstName" 
+                placeholder="Введите имя" 
+                className="rounded-xl"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Фамилия</Label>
+              <Input id="lastName" placeholder="Введите фамилию" className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Номер телефона</Label>
+              <Input id="phone" type="tel" placeholder="+7 (999) 999-99-99" className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
+              <Input id="password" type="password" placeholder="Введите пароль" className="rounded-xl" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="remember" 
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              />
+              <Label htmlFor="remember" className="cursor-pointer text-sm">
+                Запомнить меня
+              </Label>
+            </div>
+            <Button onClick={() => handleLogin(firstName)} className="w-full rounded-xl h-12" size="lg">
+              Войти
+            </Button>
           <div className="text-center pt-4">
             <p className="text-sm text-muted-foreground mb-2">
               Нет аккаунта? Ничего страшного.
@@ -230,39 +275,50 @@ const Index = () => {
         </CardContent>
       </Card>
     </div>
-  );
+    );
+  };
 
-  const RegisterScreen = () => (
-    <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in">
-      <Card className="w-full max-w-md shadow-xl rounded-3xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">Регистрация</CardTitle>
-          <CardDescription>Создайте аккаунт для записи</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="regFirstName">Имя</Label>
-            <Input id="regFirstName" placeholder="Введите имя" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="regLastName">Фамилия</Label>
-            <Input id="regLastName" placeholder="Введите фамилию" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="regPhone">Номер телефона</Label>
-            <Input id="regPhone" type="tel" placeholder="+7 (999) 999-99-99" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="regPassword">Придумайте пароль</Label>
-            <Input id="regPassword" type="password" placeholder="Введите пароль" className="rounded-xl" />
-          </div>
-          <Button onClick={handleRegister} className="w-full rounded-xl h-12" size="lg">
-            Зарегистрироваться
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const RegisterScreen = () => {
+    const [regFirstName, setRegFirstName] = useState('');
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in">
+        <Card className="w-full max-w-md shadow-xl rounded-3xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl">Регистрация</CardTitle>
+            <CardDescription>Создайте аккаунт для записи</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="regFirstName">Имя</Label>
+              <Input 
+                id="regFirstName" 
+                placeholder="Введите имя" 
+                className="rounded-xl"
+                value={regFirstName}
+                onChange={(e) => setRegFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regLastName">Фамилия</Label>
+              <Input id="regLastName" placeholder="Введите фамилию" className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regPhone">Номер телефона</Label>
+              <Input id="regPhone" type="tel" placeholder="+7 (999) 999-99-99" className="rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regPassword">Придумайте пароль</Label>
+              <Input id="regPassword" type="password" placeholder="Введите пароль" className="rounded-xl" />
+            </div>
+            <Button onClick={() => handleRegister(regFirstName)} className="w-full rounded-xl h-12" size="lg">
+              Зарегистрироваться
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const DashboardScreen = () => (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade-in">
