@@ -31,6 +31,7 @@ const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedService, setSelectedService] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [rating, setRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>('');
@@ -62,9 +63,10 @@ const Index = () => {
   };
 
   const handleBooking = () => {
-    if (selectedDate && selectedTime) {
+    if (selectedDate && selectedTime && selectedService) {
+      const service = priceList.find(s => s.service === selectedService);
       toast.success('Вы успешно записаны!', {
-        description: `${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
+        description: `${service?.service} - ${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
       });
       setCurrentScreen('dashboard');
     }
@@ -308,15 +310,34 @@ const Index = () => {
           <CardDescription>Выберите удобные дату и время</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-2xl border shadow-sm"
-              disabled={(date) => date < new Date()}
-            />
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold">Выберите услугу</Label>
+            <RadioGroup value={selectedService} onValueChange={setSelectedService}>
+              {priceList.map((item, index) => (
+                <div key={index} className="flex items-center space-x-2 p-3 border rounded-xl hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value={item.service} id={`service-${index}`} />
+                  <Label htmlFor={`service-${index}`} className="flex-1 cursor-pointer flex justify-between">
+                    <span>{item.service}</span>
+                    <span className="font-bold text-primary">{item.price}</span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </div>
+
+          {selectedService && (
+            <>
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="rounded-2xl border shadow-sm"
+                  disabled={(date) => date < new Date()}
+                />
+              </div>
+            </>
+          )}
           
           {selectedDate && (
             <>
@@ -360,7 +381,7 @@ const Index = () => {
 
           <Button 
             onClick={handleBooking}
-            disabled={!selectedDate || !selectedTime}
+            disabled={!selectedDate || !selectedTime || !selectedService}
             className="w-full rounded-xl h-12"
             size="lg"
           >
