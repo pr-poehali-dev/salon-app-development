@@ -288,6 +288,16 @@ const Index = () => {
           <Icon name="Star" className="mr-2" size={24} />
           Посмотреть отзывы
         </Button>
+
+        <Button 
+          size="lg" 
+          onClick={() => setCurrentScreen('home')}
+          variant="secondary"
+          className="h-14 text-base rounded-2xl hover:scale-105 transition-transform shadow-md md:col-span-2"
+        >
+          <Icon name="Home" className="mr-2" size={20} />
+          На главную
+        </Button>
       </div>
     </div>
   );
