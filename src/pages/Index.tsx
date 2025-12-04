@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
@@ -31,7 +32,7 @@ const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedService, setSelectedService] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [rating, setRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>('');
@@ -63,13 +64,26 @@ const Index = () => {
   };
 
   const handleBooking = () => {
-    if (selectedDate && selectedTime && selectedService) {
-      const service = priceList.find(s => s.service === selectedService);
+    if (selectedDate && selectedTime && selectedServices.length > 0) {
+      const servicesText = selectedServices.join(', ');
       toast.success('Вы успешно записаны!', {
-        description: `${service?.service} - ${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
+        description: `${servicesText} - ${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
       });
       setCurrentScreen('dashboard');
+      setSelectedServices([]);
     }
+  };
+
+  const handleServiceToggle = (service: string) => {
+    setSelectedServices(prev => {
+      if (prev.includes(service)) {
+        return prev.filter(s => s !== service);
+      }
+      if (prev.length < 2) {
+        return [...prev, service];
+      }
+      return prev;
+    });
   };
 
   const handleSubmitReview = () => {
@@ -311,21 +325,31 @@ const Index = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label className="text-lg font-semibold">Выберите услугу</Label>
-            <RadioGroup value={selectedService} onValueChange={setSelectedService}>
+            <Label className="text-lg font-semibold">Выберите услуги (до 2-х)</Label>
+            <div className="space-y-2">
               {priceList.map((item, index) => (
-                <div key={index} className="flex items-center space-x-2 p-3 border rounded-xl hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value={item.service} id={`service-${index}`} />
+                <div key={index} className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent/50 transition-colors">
+                  <Checkbox 
+                    id={`service-${index}`}
+                    checked={selectedServices.includes(item.service)}
+                    onCheckedChange={() => handleServiceToggle(item.service)}
+                    disabled={selectedServices.length >= 2 && !selectedServices.includes(item.service)}
+                  />
                   <Label htmlFor={`service-${index}`} className="flex-1 cursor-pointer flex justify-between">
                     <span>{item.service}</span>
                     <span className="font-bold text-primary">{item.price}</span>
                   </Label>
                 </div>
               ))}
-            </RadioGroup>
+            </div>
+            {selectedServices.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Выбрано: {selectedServices.length} из 2
+              </p>
+            )}
           </div>
 
-          {selectedService && (
+          {selectedServices.length > 0 && (
             <>
               <div className="flex justify-center">
                 <Calendar
@@ -381,7 +405,7 @@ const Index = () => {
 
           <Button 
             onClick={handleBooking}
-            disabled={!selectedDate || !selectedTime || !selectedService}
+            disabled={!selectedDate || !selectedTime || selectedServices.length === 0}
             className="w-full rounded-xl h-12"
             size="lg"
           >
