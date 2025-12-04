@@ -41,11 +41,25 @@ const Index = () => {
       setUserName(authData.userName);
       setCurrentScreen('dashboard');
     }
+    
+    fetchBookedSlots();
   }, []);
+
+  const fetchBookedSlots = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/df6e5e32-71b8-4ca6-83a3-6a76fde615cc');
+      const data = await response.json();
+      setBookedSlots(data.booked_slots || []);
+    } catch (error) {
+      console.error('Failed to fetch booked slots:', error);
+    }
+  };
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [wishes, setWishes] = useState<string>('');
+  const [bookedSlots, setBookedSlots] = useState<Array<{date: string, time: string}>>([]);
   const [rating, setRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>('');
   const [reviews, setReviews] = useState<Review[]>([
@@ -63,7 +77,7 @@ const Index = () => {
     { service: 'Дизайн', price: '150₽' }
   ];
 
-  const availableTimes = ['10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+  const availableTimes = ['9:00', '12:00', '15:00', '18:00', '21:00'];
 
   const handleLogin = (firstName: string) => {
     setIsLoggedIn(true);
@@ -89,14 +103,44 @@ const Index = () => {
     }));
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (selectedDate && selectedTime && selectedServices.length > 0) {
       const servicesText = selectedServices.join(', ');
-      toast.success('Вы успешно записаны!', {
-        description: `${servicesText} - ${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
-      });
-      setCurrentScreen('dashboard');
-      setSelectedServices([]);
+      
+      try {
+        const response = await fetch('https://functions.poehali.dev/df6e5e32-71b8-4ca6-83a3-6a76fde615cc', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            client_name: userName || 'Клиент',
+            client_phone: '+79991234567',
+            services: servicesText,
+            booking_date: selectedDate.toISOString().split('T')[0],
+            booking_time: selectedTime,
+            payment_method: paymentMethod,
+            wishes: wishes
+          })
+        });
+        
+        if (response.ok) {
+          toast.success('Вы успешно записаны!', {
+            description: `${servicesText} - ${selectedDate.toLocaleDateString('ru-RU')} в ${selectedTime}`
+          });
+          setCurrentScreen('dashboard');
+          setSelectedServices([]);
+          setWishes('');
+          fetchBookedSlots();
+        } else {
+          const error = await response.json();
+          toast.error('Ошибка записи', {
+            description: error.error || 'Попробуйте другое время'
+          });
+        }
+      } catch (error) {
+        toast.error('Ошибка соединения');
+      }
     }
   };
 
@@ -423,17 +467,23 @@ const Index = () => {
             <>
               <div className="space-y-3">
                 <Label className="text-lg font-semibold">Доступное время</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {availableTimes.map((time) => (
-                    <Button
-                      key={time}
-                      variant={selectedTime === time ? 'default' : 'outline'}
-                      onClick={() => setSelectedTime(time)}
-                      className="rounded-xl"
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2">
+                  {availableTimes.map((time) => {
+                    const isBooked = bookedSlots.some(
+                      slot => slot.date === selectedDate.toISOString().split('T')[0] && slot.time === time
+                    );
+                    return (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? 'default' : 'outline'}
+                        onClick={() => !isBooked && setSelectedTime(time)}
+                        className={`rounded-xl ${isBooked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isBooked}
+                      >
+                        {time} {isBooked && '✕'}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -455,6 +505,17 @@ const Index = () => {
                     </Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="wishes" className="text-lg font-semibold">Пожелания к записи (необязательно)</Label>
+                <Textarea
+                  id="wishes"
+                  placeholder="Напишите ваши пожелания или особые требования..."
+                  value={wishes}
+                  onChange={(e) => setWishes(e.target.value)}
+                  className="rounded-xl min-h-[100px]"
+                />
               </div>
             </>
           )}

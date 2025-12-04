@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Get booked slots",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create new booking",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "client_name": "Тест",
+        "client_phone": "+79991234567",
+        "services": "Маникюр",
+        "booking_date": "2025-12-20",
+        "booking_time": "15:00",
+        "payment_method": "cash",
+        "wishes": "Тестовая запись"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
